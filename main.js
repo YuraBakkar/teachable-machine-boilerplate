@@ -20,7 +20,11 @@ import * as knnClassifier from '@tensorflow-models/knn-classifier';
 // Number of classes to classify
 const NUM_CLASSES = 3;
 // Webcam Image size. Must be 227. 
-const IMAGE_SIZE = 227;
+//const IMAGE_SIZE = 227;
+const IMAGE_SIZE_WIDTH = 340;
+const IMAGE_SIZE_HEIGHT = 460;
+
+const VIDEO_MODE = 'user';//'environment';//or 'user'
 // K value for KNN
 const TOPK = 10;
 
@@ -31,6 +35,8 @@ class Main {
     this.infoTexts = [];
     this.training = -1; // -1 when no class is being trained
     this.videoPlaying = false;
+
+    this.videoMode = VIDEO_MODE;
 
     // Initiate deeplearn.js math and knn classifier objects
     this.bindPage();
@@ -67,16 +73,49 @@ class Main {
       this.infoTexts.push(infoText);
     }
 
+    // Create toggle video_mode button
+    const button1 = document.createElement('button')
+    button1.innerText = "Toggle camera";
+    button1.style.cssText = "padding-left: 50px;";
+    document.body.appendChild(button1);
+
+    // Listen for mouse events when clicking the button
+    button1.addEventListener('touchstart', (event) => {
+      if (this.videoMode == 'environment') {
+        this.videoMode = 'user';
+      } else {
+        this.videoMode = 'environment';
+      }
+      this.stop()
+      this.startStream()
+    });
+
 
     // Setup webcam
-    navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+    //navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+    this.startStream()
+  }
+
+  startStream() {
+    navigator.mediaDevices.getUserMedia({
+      video: {
+        width: {
+          min: IMAGE_SIZE_WIDTH,
+        },
+        height: {
+          min: IMAGE_SIZE_HEIGHT,
+        },
+        facingMode: this.videoMode
+      }, audio: false
+    })
       .then((stream) => {
         this.video.srcObject = stream;
-        this.video.width = IMAGE_SIZE;
-        this.video.height = IMAGE_SIZE;
+        this.video.width = IMAGE_SIZE_WIDTH;
+        this.video.height = IMAGE_SIZE_HEIGHT;
 
         this.video.addEventListener('playing', () => this.videoPlaying = true);
         this.video.addEventListener('paused', () => this.videoPlaying = false);
+        this.start()
       })
   }
 
@@ -84,7 +123,7 @@ class Main {
     this.knn = knnClassifier.create();
     this.mobilenet = await mobilenetModule.load();
 
-    this.start();
+    //this.start();
   }
 
   start() {
