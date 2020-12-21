@@ -52,11 +52,13 @@ class Main {
       // Create training button
       const button = document.createElement('button')
       button.innerText = "Train " + i;
+      button.style.cssText = "padding-left: 50px;";
       div.appendChild(button);
 
       // Listen for mouse events when clicking the button
-      button.addEventListener('mousedown', () => this.training = i);
-      button.addEventListener('mouseup', () => this.training = -1);
+      button.addEventListener('touchstart', (event) => this.training = i);
+      button.addEventListener('touchend', (event) => this.training = -1);
+      button.addEventListener('touchcancel', (event) => this.training = -1);
 
       // Create info text
       const infoText = document.createElement('span')
