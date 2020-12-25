@@ -140,7 +140,7 @@ class Main {
 
     // Create info text
     const infoText = document.createElement('span')
-    infoText.innerText = " No examples added";
+    infoText.innerText = " No image samples";
     infoText.classList.add("classInfo")
     div.appendChild(infoText);
     this.infoTexts.push(infoText);
@@ -240,7 +240,7 @@ class Main {
 
           // Update info text
           if (exampleCount[i] > 0) {
-            this.infoTexts[i].innerText = ` ${exampleCount[i]} examples - ${res.confidences[i] * 100}%`
+            this.infoTexts[i].innerText = ` ${exampleCount[i]} image samples - ${res.confidences[i] * 100}%`
           }
         }
       }
