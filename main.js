@@ -21,8 +21,9 @@ import * as knnClassifier from '@tensorflow-models/knn-classifier';
 const NUM_CLASSES = 3;
 // Webcam Image size. Must be 227. 
 //const IMAGE_SIZE = 227;
-const IMAGE_SIZE_WIDTH = 340;
-const IMAGE_SIZE_HEIGHT = 460;
+const IMAGE_SIZE_WIDTH = 640;
+const IMAGE_SIZE_HEIGHT = 480;
+var video_width = IMAGE_SIZE_WIDTH
 
 const VIDEO_MODE = 'user';//'environment';//or 'user'
 // K value for KNN
@@ -41,46 +42,55 @@ class Main {
     // Initiate deeplearn.js math and knn classifier objects
     this.bindPage();
 
+    const divWrapper = document.createElement('div');
+    divWrapper.classList.add("wrapperDiv")
+    document.body.appendChild(divWrapper);
+
+    this.divMain = document.createElement('div');
+    this.divMain.classList.add("mainDiv")
+    divWrapper.appendChild(this.divMain);
+    video_width = window.innerWidth//divMain.offsetWidth
+
     // Create video element that will contain the webcam image
     this.video = document.createElement('video');
     this.video.setAttribute('autoplay', '');
     this.video.setAttribute('playsinline', '');
 
     // Add video element to DOM
-    document.body.appendChild(this.video);
+    this.divMain.appendChild(this.video);
+
+    // Create toggle video_mode button
+    const rotateCamera = document.createElement('img')
+    rotateCamera.src = 'rotate.png'
+    rotateCamera.classList.add('rotateCamera')
+    this.divMain.appendChild(rotateCamera);
 
     // Create training buttons and info texts    
     for (let i = 0; i < NUM_CLASSES; i++) {
-      const div = document.createElement('div');
-      document.body.appendChild(div);
-      div.style.marginBottom = '10px';
-
-      // Create training button
-      const button = document.createElement('button')
-      button.innerText = "Train " + i;
-      button.style.cssText = "padding-left: 50px;";
-      div.appendChild(button);
-
-      // Listen for mouse events when clicking the button
-      button.addEventListener('touchstart', (event) => this.training = i);
-      button.addEventListener('touchend', (event) => this.training = -1);
-      button.addEventListener('touchcancel', (event) => this.training = -1);
-
-      // Create info text
-      const infoText = document.createElement('span')
-      infoText.innerText = " No examples added";
-      div.appendChild(infoText);
-      this.infoTexts.push(infoText);
+      this.createClassDiv(i)
     }
 
-    // Create toggle video_mode button
-    const button1 = document.createElement('button')
-    button1.innerText = "Toggle camera";
-    button1.style.cssText = "padding-left: 50px;";
-    document.body.appendChild(button1);
+    const divClassWrapper = document.createElement('div');
+    divClassWrapper.classList.add("classAddWrapperDiv")
+    divWrapper.appendChild(divClassWrapper);
+    const buttonAddClass = document.createElement('button')
+    //buttonAddClass.innerText = "Add a class";
+    buttonAddClass.classList.add('addClass')
+
+    const text1 = document.createElement('span')
+    text1.innerText = "+";
+    text1.classList.add("addClassPlus")
+    buttonAddClass.appendChild(text1);
+    const text2 = document.createElement('span')
+    text2.innerText = "Add a class";
+    buttonAddClass.appendChild(text2);
+
+    //button.style.cssText = "padding-left: 50px;";
+    buttonAddClass.addEventListener('touchstart', this.addClassEvent.bind(this));
+    divClassWrapper.appendChild(buttonAddClass);
 
     // Listen for mouse events when clicking the button
-    button1.addEventListener('touchstart', (event) => {
+    rotateCamera.addEventListener('touchstart', (event) => {
       if (this.videoMode == 'environment') {
         this.videoMode = 'user';
       } else {
@@ -96,6 +106,57 @@ class Main {
     this.startStream()
   }
 
+  addClassEvent() {
+    let els = document.body.getElementsByClassName('className')//.getAttribute('data-id')
+    this.createClassDiv(els.length + 1)
+  }
+
+  createClassDiv(i) {
+    const divClassWrapper = document.createElement('div');
+    divClassWrapper.classList.add("classWrapperDiv")
+    this.divMain.appendChild(divClassWrapper);
+    const div = document.createElement('div');
+    divClassWrapper.appendChild(div);
+    div.classList.add("classDiv");
+    div.setAttribute('data-id', i);
+    //div.style.marginBottom = '10px';
+    const className = document.createElement('span')
+    className.innerText = "Class " + i;
+    className.classList.add("className")
+    div.appendChild(className);
+
+    const editPencil = document.createElement('img')
+    editPencil.src = 'pencil.png'
+    editPencil.classList.add('editPencil')
+    editPencil.addEventListener('touchstart', function (event) {
+      let el = this.parentElement.getElementsByClassName('className')//.getAttribute('data-id')
+      let t = el[0].textContent
+      let newT = prompt('Enter new Class name', t)
+      if (newT) {
+        el[0].textContent = newT.trim()
+      }
+    });
+    div.appendChild(editPencil);
+
+    // Create info text
+    const infoText = document.createElement('span')
+    infoText.innerText = " No examples added";
+    infoText.classList.add("classInfo")
+    div.appendChild(infoText);
+    this.infoTexts.push(infoText);
+
+    // Create training button
+    const button = document.createElement('button')
+    //button.innerText = "·";
+    //button.style.cssText = "padding-left: 50px;";
+    div.appendChild(button);
+
+    // Listen for mouse events when clicking the button
+    button.addEventListener('touchstart', (event) => this.training = i);
+    button.addEventListener('touchend', (event) => this.training = -1);
+    button.addEventListener('touchcancel', (event) => this.training = -1);
+  }
+
   startStream() {
     navigator.mediaDevices.getUserMedia({
       video: {
@@ -109,9 +170,11 @@ class Main {
       }, audio: false
     })
       .then((stream) => {
+        let { width, height } = stream.getTracks()[0].getSettings();
+        console.log(width, height)
         this.video.srcObject = stream;
-        this.video.width = IMAGE_SIZE_WIDTH;
-        this.video.height = IMAGE_SIZE_HEIGHT;
+        this.video.width = video_width > 600 ? 590 : video_width - 10 //IMAGE_SIZE_WIDTH;
+        this.video.height = height * this.video.width / width//IMAGE_SIZE_WIDTH>video_width ? IMAGE_SIZE_HEIGHT * video_width/IMAGE_SIZE_WIDTH : IMAGE_SIZE_HEIGHT;
 
         this.video.addEventListener('playing', () => this.videoPlaying = true);
         this.video.addEventListener('paused', () => this.videoPlaying = false);
