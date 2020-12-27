@@ -165,9 +165,18 @@ class Main {
       this.training = i
     });
     //button.addEventListener('mouseup', (event) => this.training = -1);
-    button.addEventListener('touchstart', (event) => this.training = i);
-    button.addEventListener('touchend', (event) => this.training = -1);
-    button.addEventListener('touchcancel', (event) => this.training = -1);
+    button.addEventListener('touchstart', (event) => {//touchstart
+      event.currentTarget.classList.add('pressed')
+      this.training = i
+    });
+    button.addEventListener('touchend', (event) => {
+      event.currentTarget.classList.remove('pressed')
+      this.training = -1
+    });
+    button.addEventListener('touchcancel', (event) => {
+      event.currentTarget.classList.remove('pressed')
+      this.training = -1
+    });
   }
 
   startStream() {
