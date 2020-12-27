@@ -18,7 +18,7 @@ import * as tf from '@tensorflow/tfjs';
 import * as knnClassifier from '@tensorflow-models/knn-classifier';
 
 // Number of classes to classify
-const NUM_CLASSES = 3;
+const NUM_CLASSES = 4;
 // Webcam Image size. Must be 227. 
 //const IMAGE_SIZE = 227;
 const IMAGE_SIZE_WIDTH = 640;
@@ -34,6 +34,7 @@ class Main {
   constructor() {
     // Initiate variables
     this.infoTexts = [];
+    this.predictions = [];
     this.training = -1; // -1 when no class is being trained
     this.videoPlaying = false;
 
@@ -108,7 +109,7 @@ class Main {
 
   addClassEvent() {
     let els = document.body.getElementsByClassName('className')//.getAttribute('data-id')
-    this.createClassDiv(els.length + 1)
+    this.createClassDiv(els.length)
   }
 
   createClassDiv(i) {
@@ -140,10 +141,18 @@ class Main {
 
     // Create info text
     const infoText = document.createElement('span')
-    infoText.innerText = " No image samples";
+    infoText.innerText = "";
     infoText.classList.add("classInfo")
+    infoText.classList.add("hidden")
     div.appendChild(infoText);
     this.infoTexts.push(infoText);
+
+    const infoPrediction = document.createElement('span')
+    infoPrediction.innerText = "";
+    infoPrediction.classList.add("classPrediction")
+    infoPrediction.classList.add("hidden")
+    div.appendChild(infoPrediction);
+    this.predictions.push(infoPrediction);
 
     // Create training button
     const button = document.createElement('button')
@@ -152,6 +161,10 @@ class Main {
     div.appendChild(button);
 
     // Listen for mouse events when clicking the button
+    button.addEventListener('touchstart', (event) => {
+      this.training = i
+    });
+    //button.addEventListener('mouseup', (event) => this.training = -1);
     button.addEventListener('touchstart', (event) => this.training = i);
     button.addEventListener('touchend', (event) => this.training = -1);
     button.addEventListener('touchcancel', (event) => this.training = -1);
@@ -203,55 +216,69 @@ class Main {
   }
 
   async animate() {
+    let a
     if (this.videoPlaying) {
       // Get image data from video element
       const image = tf.fromPixels(this.video);
 
       let logits;
       // 'conv_preds' is the logits activation of MobileNet.
-      const infer = () => this.mobilenet.infer(image, 'conv_preds');
+      if (this.mobilenet) {
+        const infer = () => this.mobilenet.infer(image, 'conv_preds');
 
-      // Train class if one of the buttons is held down
-      if (this.training != -1) {
-        logits = infer();
+        // Train class if one of the buttons is held down
+        if (this.training != -1) {
+          //console.log(this)
+          logits = infer();
+          //document.body.getElementsByClassName('addClass')[0].textContent = this.training
+          // Add current image to classifier
+          this.knn.addExample(logits, this.training)
+        }
 
-        // Add current image to classifier
-        this.knn.addExample(logits, this.training)
-      }
+        const numClasses = this.knn.getNumClasses();
+        if (numClasses > 0) {
 
-      const numClasses = this.knn.getNumClasses();
-      if (numClasses > 0) {
+          // If classes have been added run predict
+          logits = infer();
+          const res = await this.knn.predictClass(logits, TOPK);
+          //console.log(res)
+          //a = 1
 
-        // If classes have been added run predict
-        logits = infer();
-        const res = await this.knn.predictClass(logits, TOPK);
+          let nc = document.body.getElementsByClassName('className')
+          for (let i = 0; i < nc.length/*NUM_CLASSES*/; i++) {
 
-        for (let i = 0; i < NUM_CLASSES; i++) {
+            // The number of examples for each class
+            const exampleCount = this.knn.getClassExampleCount();
 
-          // The number of examples for each class
-          const exampleCount = this.knn.getClassExampleCount();
+            // Make the predicted class bold
+            if (res.classIndex == i) {
+              this.infoTexts[i].style.fontWeight = 'bold';
+            } else {
+              this.infoTexts[i].style.fontWeight = 'normal';
+            }
 
-          // Make the predicted class bold
-          if (res.classIndex == i) {
-            this.infoTexts[i].style.fontWeight = 'bold';
-          } else {
-            this.infoTexts[i].style.fontWeight = 'normal';
+            // Update info text
+            if (exampleCount[i] > 0) {
+              if (!res.confidences[i]) res.confidences[i] = 0
+              res.confidences[i] = Math.trunc(res.confidences[i])
+              this.infoTexts[i].innerText = ` ${exampleCount[i]} image samples`
+              this.infoTexts[i].classList.remove('hidden')
+              this.predictions[i].innerText = `${res.confidences[i] * 100}%`
+              this.predictions[i].classList.remove('hidden')
+            }
           }
+        }
 
-          // Update info text
-          if (exampleCount[i] > 0) {
-            this.infoTexts[i].innerText = ` ${exampleCount[i]} image samples - ${res.confidences[i] * 100}%`
-          }
+        // Dispose image when done
+        image.dispose();
+        if (logits != null) {
+          logits.dispose();
         }
       }
 
-      // Dispose image when done
-      image.dispose();
-      if (logits != null) {
-        logits.dispose();
-      }
     }
-    this.timer = requestAnimationFrame(this.animate.bind(this));
+    if (!a)
+      this.timer = requestAnimationFrame(this.animate.bind(this));
   }
 }
 
