@@ -260,10 +260,10 @@ class Main {
             // Update info text
             if (exampleCount[i] > 0) {
               if (!res.confidences[i]) res.confidences[i] = 0
-              res.confidences[i] = Math.trunc(res.confidences[i])
+              res.confidences[i] = Math.trunc(res.confidences[i]*100)
               this.infoTexts[i].innerText = ` ${exampleCount[i]} image samples`
               this.infoTexts[i].classList.remove('hidden')
-              this.predictions[i].innerText = `${res.confidences[i] * 100}%`
+              this.predictions[i].innerText = `${res.confidences[i]}%`
               this.predictions[i].classList.remove('hidden')
             }
           }
