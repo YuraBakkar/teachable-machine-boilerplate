@@ -60,6 +60,11 @@ body {
     font-size: 20px;
 }
 
+.classDiv button.pressed {
+    color: red;
+    background-color: black;
+}
+
 .classDiv button:before {
     display: block;
     content: '·';
