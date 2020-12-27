@@ -67,7 +67,18 @@ body {
 
 .classInfo {
     position: absolute;
-    right: 80px;
+    right: 110px;
+    padding-right: 10px;
+    border-right: 1px solid #a5a5a5;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    font-size: 12px;
+}
+
+.classPrediction {
+    position: absolute;
+    right: 60px;
     padding-right: 10px;
     border-right: 1px solid #a5a5a5;
     height: 40px;
@@ -96,4 +107,8 @@ body {
     border: 1px solid #a5a5a5;
     margin-right: 5px;
     line-height: 7px;
+}
+
+.hidden {
+    display: none;
 }
