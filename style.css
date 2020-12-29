@@ -117,3 +117,12 @@ body {
 .hidden {
     display: none;
 }
+
+.save {
+    color: white;
+    background-color: #79c4d4;
+    border: 1px solid #79c4d4;
+    border-radius: 4px;
+    padding: 12px;
+    float: right;
+}
