@@ -18,7 +18,7 @@ import * as tf from '@tensorflow/tfjs';
 import * as knnClassifier from '@tensorflow-models/knn-classifier';
 
 // Number of classes to classify
-const NUM_CLASSES = 4;
+const NUM_CLASSES = 3;
 // Webcam Image size. Must be 227. 
 //const IMAGE_SIZE = 227;
 const IMAGE_SIZE_WIDTH = 640;
@@ -90,6 +90,12 @@ class Main {
     buttonAddClass.addEventListener('touchstart', this.addClassEvent.bind(this));
     divClassWrapper.appendChild(buttonAddClass);
 
+    const buttonSave = document.createElement('button')
+    buttonSave.innerText = "Save model";
+    buttonSave.classList.add('save')
+    buttonSave.addEventListener('touchstart', this.saveModel.bind(this));
+    divClassWrapper.appendChild(buttonSave);
+
     // Listen for mouse events when clicking the button
     rotateCamera.addEventListener('touchstart', (event) => {
       if (this.videoMode == 'environment') {
@@ -110,6 +116,15 @@ class Main {
   addClassEvent() {
     let els = document.body.getElementsByClassName('className')//.getAttribute('data-id')
     this.createClassDiv(els.length)
+  }
+
+  async saveModel() {
+    const hidden = document.body.getElementsByClassName('classInfo hidden')
+    if (hidden.length > 0)
+      return
+    //console.log(this.mobilenet)
+    //console.log(this.knn)
+    await this.mobilenet.model.save('downloads://my-model');
   }
 
   createClassDiv(i) {
@@ -269,7 +284,7 @@ class Main {
             // Update info text
             if (exampleCount[i] > 0) {
               if (!res.confidences[i]) res.confidences[i] = 0
-              res.confidences[i] = Math.trunc(res.confidences[i]*100)
+              res.confidences[i] = Math.trunc(res.confidences[i] * 100)
               this.infoTexts[i].innerText = ` ${exampleCount[i]} image samples`
               this.infoTexts[i].classList.remove('hidden')
               this.predictions[i].innerText = `${res.confidences[i]}%`
