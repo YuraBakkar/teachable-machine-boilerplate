@@ -113,6 +113,19 @@ class Main {
     this.startStream()
   }
 
+  download(filename, text) {
+    var element = document.createElement('a');
+    element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+    element.setAttribute('download', filename);
+
+    element.style.display = 'none';
+    document.body.appendChild(element);
+
+    element.click();
+
+    document.body.removeChild(element);
+  }
+
   addClassEvent() {
     let els = document.body.getElementsByClassName('className')//.getAttribute('data-id')
     this.createClassDiv(els.length)
@@ -120,11 +133,30 @@ class Main {
 
   async saveModel() {
     const hidden = document.body.getElementsByClassName('classInfo hidden')
+    //console.log(this.mobilenet)
+    //console.log(this.knn)
     if (hidden.length > 0)
       return
     //console.log(this.mobilenet)
     //console.log(this.knn)
+    const classNameElements = document.body.getElementsByClassName('className')
+    const classNames = []
+    for(let i=0; i<classNameElements.length; i++) {
+      classNames.push(classNameElements[i].innerText)
+    }
     await this.mobilenet.model.save('downloads://my-model');
+    const file_content = {
+      tfjsVersion:"1.3.1",
+      tmVersion:"2.3.1",
+      packageVersion:"0.8.4",
+      packageName:"@teachablemachine/image",
+      timeStamp:new Date().valueOf(),//"2020-12-29T08:21:16.452Z",
+      userMetadata:{},
+      modelName:"tm-my-image-model",
+      labels:classNames
+    }
+    this.download('metadata.json', JSON.stringify(file_content))
+    
   }
 
   createClassDiv(i) {
