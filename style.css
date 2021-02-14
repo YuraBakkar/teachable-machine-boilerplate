@@ -32,6 +32,11 @@ body {
     text-align: left;
 }
 
+.classSaveZipWrapperDiv {
+    margin: 0 auto 10px auto;
+    width: 95%;
+}
+
 .addClass {
     padding: 15px 50px;
     border: 1px dashed #a5a5a5;
