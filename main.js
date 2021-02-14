@@ -17,6 +17,9 @@ import * as mobilenetModule from '@tensorflow-models/mobilenet';
 import * as tf from '@tensorflow/tfjs';
 import * as knnClassifier from '@tensorflow-models/knn-classifier';
 
+var JSZip = require("jszip");
+var FileSaver = require('file-saver');
+
 // Number of classes to classify
 const NUM_CLASSES = 3;
 // Webcam Image size. Must be 227. 
@@ -33,6 +36,7 @@ const TOPK = 10;
 class Main {
   constructor() {
     // Initiate variables
+    this.frames = [];
     this.infoTexts = [];
     this.predictions = [];
     this.training = -1; // -1 when no class is being trained
@@ -43,6 +47,7 @@ class Main {
     // Initiate deeplearn.js math and knn classifier objects
     this.bindPage();
 
+    this.canvas = document.createElement("canvas");
     const divWrapper = document.createElement('div');
     divWrapper.classList.add("wrapperDiv")
     document.body.appendChild(divWrapper);
@@ -69,11 +74,15 @@ class Main {
     // Create training buttons and info texts    
     for (let i = 0; i < NUM_CLASSES; i++) {
       this.createClassDiv(i)
+      this.frames.push([])
     }
 
     const divClassWrapper = document.createElement('div');
     divClassWrapper.classList.add("classAddWrapperDiv")
     divWrapper.appendChild(divClassWrapper);
+    const divClassWrapper1 = document.createElement('div');
+    divClassWrapper1.classList.add("classSaveZipWrapperDiv")
+    divWrapper.appendChild(divClassWrapper1);
     const buttonAddClass = document.createElement('button')
     //buttonAddClass.innerText = "Add a class";
     buttonAddClass.classList.add('addClass')
@@ -95,6 +104,12 @@ class Main {
     buttonSave.classList.add('save')
     buttonSave.addEventListener('touchstart', this.saveModel.bind(this));
     divClassWrapper.appendChild(buttonSave);
+
+    const buttonSaveZip = document.createElement('button')
+    buttonSaveZip.innerText = "Save ZIP";
+    buttonSaveZip.classList.add('save')
+    buttonSaveZip.addEventListener('touchstart', this.saveZip.bind(this));
+    divClassWrapper1.appendChild(buttonSaveZip);
 
     // Listen for mouse events when clicking the button
     rotateCamera.addEventListener('touchstart', (event) => {
@@ -129,6 +144,30 @@ class Main {
   addClassEvent() {
     let els = document.body.getElementsByClassName('className')//.getAttribute('data-id')
     this.createClassDiv(els.length)
+    this.frames.push([])
+  }
+
+  saveZip() {
+    //console.log(this.frames)
+    let zip = new JSZip();
+    //zip.file("Hello.txt", "Hello World\n");
+    let classes = document.body.getElementsByClassName('classDiv')
+    for(let i=0; i<classes.length; i++){
+      let id = classes[i].getAttribute('data-id')
+      let name = classes[i].querySelector('.className').innerText
+      //console.log(id,name)
+      let img = zip.folder(name);
+      for(let j=0; j<this.frames[id].length; j++){
+        //console.log(atob(this.frames[id][j]))
+        img.file("frame"+j+".png", atob(this.frames[id][j]), { binary: true });    
+      }
+      //console.log(this.frames[id])
+    }
+    zip.generateAsync({ type: "blob" })
+      .then(function (content) {
+        // see FileSaver.js
+        FileSaver.saveAs(content, "data.zip");
+      });
   }
 
   async saveModel() {
@@ -141,22 +180,22 @@ class Main {
     //console.log(this.knn)
     const classNameElements = document.body.getElementsByClassName('className')
     const classNames = []
-    for(let i=0; i<classNameElements.length; i++) {
+    for (let i = 0; i < classNameElements.length; i++) {
       classNames.push(classNameElements[i].innerText)
     }
     await this.mobilenet.model.save('downloads://my-model');
     const file_content = {
-      tfjsVersion:"1.3.1",
-      tmVersion:"2.3.1",
-      packageVersion:"0.8.4",
-      packageName:"@teachablemachine/image",
-      timeStamp:new Date().valueOf(),//"2020-12-29T08:21:16.452Z",
-      userMetadata:{},
-      modelName:"tm-my-image-model",
-      labels:classNames
+      tfjsVersion: "1.3.1",
+      tmVersion: "2.3.1",
+      packageVersion: "0.8.4",
+      packageName: "@teachablemachine/image",
+      timeStamp: new Date().valueOf(),//"2020-12-29T08:21:16.452Z",
+      userMetadata: {},
+      modelName: "tm-my-image-model",
+      labels: classNames
     }
     this.download('metadata.json', JSON.stringify(file_content))
-    
+
   }
 
   createClassDiv(i) {
@@ -245,6 +284,9 @@ class Main {
         this.video.width = video_width > 600 ? 590 : video_width - 10 //IMAGE_SIZE_WIDTH;
         this.video.height = height * this.video.width / width//IMAGE_SIZE_WIDTH>video_width ? IMAGE_SIZE_HEIGHT * video_width/IMAGE_SIZE_WIDTH : IMAGE_SIZE_HEIGHT;
 
+        this.canvas.width = this.video.width;
+        this.canvas.height = this.video.height;
+
         this.video.addEventListener('playing', () => this.videoPlaying = true);
         this.video.addEventListener('paused', () => this.videoPlaying = false);
         this.start()
@@ -286,6 +328,12 @@ class Main {
         if (this.training != -1) {
           //console.log(this)
           logits = infer();
+          this.canvas.getContext('2d')
+            .drawImage(this.video, 0, 0, this.canvas.width, this.canvas.height);
+          // convert it to a usable data URL
+          const dataURL = this.canvas.toDataURL();
+          this.imgData = dataURL.replace(/^data:image\/(png|jpg);base64,/, "");
+          this.frames[this.training].push(this.imgData)
           //document.body.getElementsByClassName('addClass')[0].textContent = this.training
           // Add current image to classifier
           this.knn.addExample(logits, this.training)
